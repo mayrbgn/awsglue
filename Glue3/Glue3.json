@@ -1,0 +1,41 @@
+{
+  "name" : "Glue3",
+  "jobMode" : "VISUAL",
+  "description" : "",
+  "role" : "arn:aws:iam::327371437690:role/awspracticallambda",
+  "executionProperty" : {
+    "maxConcurrentRuns" : 1
+  },
+  "command" : {
+    "name" : "glueetl",
+    "scriptLocation" : "s3://aws-glue-assets-327371437690-us-east-1/scripts/Glue3.py",
+    "pythonVersion" : "3"
+  },
+  "defaultArguments" : {
+    "--enable-metrics" : "true",
+    "--enable-spark-ui" : "true",
+    "--spark-event-logs-path" : "s3://aws-glue-assets-327371437690-us-east-1/sparkHistoryLogs/",
+    "--enable-job-insights" : "true",
+    "--enable-observability-metrics" : "true",
+    "--enable-glue-datacatalog" : "true",
+    "--enable-continuous-cloudwatch-log" : "true",
+    "--job-bookmark-option" : "job-bookmark-disable",
+    "--job-language" : "python",
+    "--TempDir" : "s3://aws-glue-assets-327371437690-us-east-1/temporary/"
+  },
+  "maxRetries" : 0,
+  "allocatedCapacity" : 10,
+  "timeout" : 480,
+  "maxCapacity" : 10.0,
+  "glueVersion" : "5.0",
+  "numberOfWorkers" : 10,
+  "workerType" : "G.1X",
+  "executionClass" : "STANDARD",
+  "codeGenConfigurationNodes" : "{\"node-1733382422342\":{\"SelectFromCollection\":{\"Index\":0,\"Inputs\":[\"node-1733381127646\"],\"Name\":\"PositivePercentage\"}},\"node-1733383840948\":{\"CustomCode\":{\"ClassName\":\"AggregateCaseCount\",\"Code\":\"df = dfc.select(list(dfc.keys())[0]).toDF()\\nfrom pyspark.sql import functions as f\\n\\ndf0 = df.groupBy(\\\"combinedname\\\").agg({\\\"positiveincrease\\\": \\\"sum\\\", \\\"totaltestresultsincrease\\\": \\\"sum\\\"})\\ndyf0 = DynamicFrame.fromDF(df0, glueContext, \\\"result0\\\")\\nreturn DynamicFrameCollection({\\\"CustomTransform0\\\": dyf0}, glueContext)\",\"Inputs\":[\"node-1733383541411\"],\"Name\":\"Custom Transform\",\"OutputSchemas\":[{\"Columns\":[{\"Name\":\"combinedname\",\"Type\":\"string\"},{\"Name\":\"sum(positiveincrease)\",\"Type\":\"double\"},{\"Name\":\"sum(totaltestresultsincrease)\",\"Type\":\"double\"}]}]}},\"node-1733383229962\":{\"S3DirectTarget\":{\"AutoDataQuality\":{\"EvaluationContext\":\"EvaluateDataQuality_node1733378911749\",\"IsEnabled\":true},\"Compression\":\"snappy\",\"Format\":\"json\",\"Inputs\":[\"node-1733382567594\"],\"Name\":\"Amazon S3\",\"PartitionKeys\":[],\"Path\":\"s3://gluebucketm/processeddata/covid_processed/\",\"SchemaChangePolicy\":{\"EnableUpdateCatalog\":false}}},\"node-1733384107197\":{\"SelectFromCollection\":{\"Index\":0,\"Inputs\":[\"node-1733383840948\"],\"Name\":\"AggregateResult\"}},\"node-1733378930345\":{\"CatalogSource\":{\"Database\":\"demodb\",\"Name\":\"Covid data\",\"Table\":\"customergluepracticalmrbch\"}},\"node-1733381127646\":{\"CustomCode\":{\"ClassName\":\"CreateMultipleOutput\",\"Code\":\"df = dfc.select(list(dfc.keys())[0]).toDF()\\nfrom pyspark.sql import functions as f\\n\\ndf.createOrReplaceTempView(\\\"inputTable\\\")\\ndf0 = spark.sql(\\\"SELECT TO_DATE(CAST(UNIX_TIMESTAMP(date, 'yyyyMMdd') AS TIMESTAMP)) as date, \\\\\\n                        state , \\\\\\n                        (positiveIncrease * 100 / totalTestResultsIncrease) as positivePercentage, \\\\\\n                        StateName \\\\\\n                FROM inputTable \\\")\\n\\ndf1 = df.withColumn('CombinedName', f.concat(f.col('StateName'), f.lit('('), f.col('state'), f.lit(')')))\\n\\ndyf0 = DynamicFrame.fromDF(df0, glueContext, \\\"result0\\\")\\ndyf1 = DynamicFrame.fromDF(df1, glueContext, \\\"result1\\\")\\n\\nreturn DynamicFrameCollection({\\n                                \\\"CustomTransform0\\\": dyf0, \\n                                \\\"CustomTransform1\\\": dyf1\\n                                }, \\n                                glueContext)    \",\"Inputs\":[\"node-1733380990057\"],\"Name\":\"Multi Output\",\"OutputSchemas\":[{\"Columns\":[{\"Name\":\"date\",\"Type\":\"date\"},{\"Name\":\"state\",\"Type\":\"string\"},{\"Name\":\"positivePercentage\",\"Type\":\"double\"},{\"Name\":\"StateName\",\"Type\":\"string\"}]},{\"Columns\":[{\"Name\":\"date\",\"Type\":\"string\"},{\"Name\":\"state\",\"Type\":\"string\"},{\"Name\":\"positiveincrease\",\"Type\":\"double\"},{\"Name\":\"totaltestresultsincrease\",\"Type\":\"double\"},{\"Name\":\"StateName\",\"Type\":\"string\"},{\"Name\":\"CombinedName\",\"Type\":\"string\"}]}]}},\"node-1733380990057\":{\"ApplyMapping\":{\"Inputs\":[\"node-1733379971746\"],\"Mapping\":[{\"Dropped\":false,\"FromPath\":[\"date\"],\"FromType\":\"string\",\"ToKey\":\"date\",\"ToType\":\"string\"},{\"Dropped\":false,\"FromPath\":[\"state\"],\"FromType\":\"string\",\"ToKey\":\"state\",\"ToType\":\"string\"},{\"Dropped\":false,\"FromPath\":[\"positiveincrease\"],\"FromType\":\"double\",\"ToKey\":\"positiveincrease\",\"ToType\":\"double\"},{\"Dropped\":false,\"FromPath\":[\"totaltestresultsincrease\"],\"FromType\":\"double\",\"ToKey\":\"totaltestresultsincrease\",\"ToType\":\"double\"},{\"Dropped\":false,\"FromPath\":[\"StateName\"],\"FromType\":\"string\",\"ToKey\":\"StateName\",\"ToType\":\"string\"}],\"Name\":\"Change Schema\"}},\"node-1733384761936\":{\"S3DirectTarget\":{\"AutoDataQuality\":{\"EvaluationContext\":\"EvaluateDataQuality_node1733378911749\",\"IsEnabled\":true},\"Compression\":\"snappy\",\"Format\":\"json\",\"Inputs\":[\"node-1733384107197\"],\"Name\":\"Amazon S3\",\"PartitionKeys\":[],\"Path\":\"s3://gluebucketm/processeddata/covid_processed_2/\",\"SchemaChangePolicy\":{\"EnableUpdateCatalog\":false}}},\"node-1733378998856\":{\"S3CsvSource\":{\"AdditionalOptions\":{\"EnableSamplePath\":false,\"SamplePath\":\"s3://gluebucketm/rawdata/states/states.csv\"},\"Escaper\":\"\",\"Exclusions\":[],\"Name\":\"State Name\",\"OptimizePerformance\":false,\"OutputSchemas\":[{\"Columns\":[{\"Name\":\"statename\",\"Type\":\"string\"},{\"Name\":\"abbrev\",\"Type\":\"string\"},{\"Name\":\"code\",\"Type\":\"string\"}]}],\"Paths\":[\"s3://gluebucketm/rawdata/states/\"],\"QuoteChar\":\"quote\",\"Recurse\":true,\"Separator\":\"comma\",\"WithHeader\":true}},\"node-1733383541411\":{\"SelectFromCollection\":{\"Index\":1,\"Inputs\":[\"node-1733381127646\"],\"Name\":\"Increaseincases\"}},\"node-1733382567594\":{\"SparkSQL\":{\"Inputs\":[\"node-1733382422342\"],\"Name\":\"Pivot By State\",\"OutputSchemas\":[{\"Columns\":[{\"Name\":\"date\",\"Type\":\"date\"},{\"Name\":\"positivePercentageNY\",\"Type\":\"double\"},{\"Name\":\"positivePercentageCA\",\"Type\":\"double\"}]}],\"SqlAliases\":[{\"Alias\":\"positivepercentage\",\"From\":\"node-1733382422342\"}],\"SqlQuery\":\"SELECT  date, positivePercentageNY, positivePercentageCA\\nFROM    positivepercentage \\n        pivot (avg(positivePercentage) as positivePercentage \\n        for state in ('NY' as positivePercentageNY, 'CA' as positivePercentageCA))\"}},\"node-1733379971746\":{\"SparkSQL\":{\"Inputs\":[\"node-1733378930345\",\"node-1733378998856\"],\"Name\":\"Join Data\",\"OutputSchemas\":[{\"Columns\":[{\"Name\":\"date\",\"Type\":\"string\"},{\"Name\":\"state\",\"Type\":\"string\"},{\"Name\":\"positiveincrease\",\"Type\":\"double\"},{\"Name\":\"totaltestresultsincrease\",\"Type\":\"double\"},{\"Name\":\"StateName\",\"Type\":\"string\"}]}],\"SqlAliases\":[{\"Alias\":\"coviddata\",\"From\":\"node-1733378930345\"},{\"Alias\":\"statename\",\"From\":\"node-1733378998856\"}],\"SqlQuery\":\"SELECT  coviddata.date,\\n        coviddata.state,\\n        coviddata.positiveincrease,\\n        coviddata.totaltestresultsincrease,\\n        statename.StateName\\nFROM    coviddata LEFT JOIN statename\\n        ON  coviddata.state = statename.Code\\nWHERE   coviddata.state in ('NY', 'CA')\"}}}",
+  "sourceControlDetails" : {
+    "provider" : "GITHUB",
+    "repository" : "awsglue",
+    "branch" : "glue1",
+    "folder" : "Glue3"
+  }
+}
